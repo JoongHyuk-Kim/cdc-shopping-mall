@@ -1,7 +1,10 @@
 package com.example.order.service;
 
 import com.example.order.domain.Order;
+import com.example.order.domain.OutboxEvent;
+import com.example.order.domain.OutboxEventType;
 import com.example.order.dto.CreateOrderRequest;
+import com.example.order.repository.OutboxEventRepository;
 import com.example.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxPayloadFactory outboxPayloadFactory;
 
     @Transactional
     public Order createOrder(CreateOrderRequest request) {
@@ -25,6 +30,7 @@ public class OrderService {
         );
 
         Order saved = orderRepository.save(order);
+        publishOutboxEvent(saved, OutboxEventType.ORDER_CREATED);
         log.info("주문 생성 완료: orderId={}, customer={}, total={}",
                 saved.getId(), saved.getCustomerName(), saved.getTotalAmount());
         return saved;
@@ -35,6 +41,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다: " + orderId));
         order.confirm();
+        publishOutboxEvent(order, OutboxEventType.ORDER_CONFIRMED);
         log.info("주문 확정: orderId={}, status={}", order.getId(), order.getStatus());
         return order;
     }
@@ -44,7 +51,18 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다: " + orderId));
         order.cancel();
+        publishOutboxEvent(order, OutboxEventType.ORDER_CANCELLED);
         log.info("주문 취소: orderId={}, status={}", order.getId(), order.getStatus());
         return order;
+    }
+
+    private void publishOutboxEvent(Order order, OutboxEventType eventType) {
+        OutboxEvent outboxEvent = OutboxEvent.create(
+                "ORDER",
+                String.valueOf(order.getId()),
+                eventType.name(),
+                outboxPayloadFactory.createOrderPayload(order, eventType)
+        );
+        outboxEventRepository.save(outboxEvent);
     }
 }

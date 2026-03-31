@@ -1,7 +1,6 @@
 package com.example.consumer.listener;
 
-import com.example.consumer.dto.DebeziumEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.consumer.dto.OrderEventPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -12,23 +11,25 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class InventoryListener {
 
-    private final ObjectMapper objectMapper;
+    private final OutboxEventParser outboxEventParser;
 
-    @KafkaListener(topics = "shopdb.shopdb.orders", groupId = "inventory-group")
+    @KafkaListener(topics = "shopdb.shopdb.outbox_events", groupId = "inventory-group")
     public void handleOrderForInventory(String message) {
         try {
-            DebeziumEvent event = objectMapper.readValue(message, DebeziumEvent.class);
+            OrderEventPayload event = outboxEventParser.parse(message).payload();
 
-            if ("u".equals(event.getOperation()) && "CONFIRMED".equals(event.getStatus())) {
+            if ("ORDER_CONFIRMED".equals(event.getEventType())) {
                 log.info("=== [재고] 주문 확정 → 재고 차감 ===");
-                log.info("  주문번호: {}", event.getId());
-                log.info("  → 재고 차감 처리 시작 (order_items 조회 후 product_inventory 차감)");
+                log.info("  주문번호: {}", event.getOrderId());
+                log.info("  품목 수: {}", event.getItems() != null ? event.getItems().size() : 0);
+                log.info("  → payload 기준으로 재고 차감 처리 시작");
             }
 
-            if ("u".equals(event.getOperation()) && "CANCELLED".equals(event.getStatus())) {
+            if ("ORDER_CANCELLED".equals(event.getEventType())) {
                 log.info("=== [재고] 주문 취소 → 재고 복원 ===");
-                log.info("  주문번호: {}", event.getId());
-                log.info("  → 재고 복원 처리 시작");
+                log.info("  주문번호: {}", event.getOrderId());
+                log.info("  품목 수: {}", event.getItems() != null ? event.getItems().size() : 0);
+                log.info("  → payload 기준으로 재고 복원 처리 시작");
             }
         } catch (Exception e) {
             log.error("재고 처리 실패: {}", e.getMessage(), e);

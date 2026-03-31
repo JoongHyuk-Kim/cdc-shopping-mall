@@ -1,6 +1,17 @@
 # 실행 및 테스트 가이드
 
-이 문서는 `cdc-shopping-mall` 프로젝트의 Docker 인프라 기동, Debezium 커넥터 등록, 애플리케이션 실행, CDC 이벤트 확인 절차를 정리한 가이드입니다.
+이 문서는 `cdc-shopping-mall` 프로젝트의 Docker 인프라 기동, Debezium 커넥터 등록, 애플리케이션 실행, Outbox 이벤트 확인 절차를 정리한 가이드입니다.
+
+## 아키텍처 개요
+
+현재 프로젝트는 `Transactional Outbox` 패턴을 사용합니다.
+
+흐름은 다음과 같습니다.
+
+1. `order-service`가 주문 데이터와 `outbox_events` 레코드를 같은 트랜잭션으로 저장
+2. Debezium이 `outbox_events` 테이블 변경만 감지
+3. 변경 이벤트를 Kafka 토픽으로 발행
+4. `event-consumer`가 Outbox payload를 읽어 알림, 재고, 분석 로직을 수행
 
 ## 1. Docker 인프라 기동
 
@@ -141,7 +152,7 @@ curl -X PATCH http://localhost:8080/api/orders/1/cancel
 - `[알림]` 주문 취소 알림 발송
 - `[재고]` 재고 복원 처리 시작
 
-## 6. Kafka UI에서 CDC 이벤트 확인
+## 6. Kafka UI에서 Outbox 이벤트 확인
 
 브라우저에서 아래 주소로 접속합니다.
 
@@ -152,8 +163,8 @@ http://localhost:8089
 확인 순서:
 
 1. `Topics` 메뉴로 이동
-2. `shopdb.shopdb.orders` 토픽 선택
-3. `Messages` 탭에서 CDC 이벤트 JSON 확인
+2. `shopdb.shopdb.outbox_events` 토픽 선택
+3. `Messages` 탭에서 Outbox 이벤트 JSON 확인
 
 ## 디버깅 명령어
 
@@ -174,7 +185,7 @@ docker exec shop-kafka kafka-topics --list --bootstrap-server localhost:9092
 ```bash
 docker exec shop-kafka kafka-console-consumer \
   --bootstrap-server localhost:9092 \
-  --topic shopdb.shopdb.orders \
+  --topic shopdb.shopdb.outbox_events \
   --from-beginning
 ```
 

@@ -4,24 +4,25 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DebeziumEvent {
+public class OutboxEventMessage {
 
     private Long id;
 
-    @JsonProperty("customer_name")
-    private String customerName;
+    @JsonProperty("aggregate_type")
+    private String aggregateType;
 
-    @JsonProperty("customer_email")
-    private String customerEmail;
+    @JsonProperty("aggregate_id")
+    private String aggregateId;
 
-    @JsonProperty("total_amount")
-    private BigDecimal totalAmount;
+    @JsonProperty("event_type")
+    private String eventType;
 
-    private String status;
+    private String payload;
+
+    @JsonProperty("created_at")
+    private String createdAt;
 
     @JsonProperty("__op")
     private String operation;

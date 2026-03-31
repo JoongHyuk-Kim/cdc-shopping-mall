@@ -1,7 +1,7 @@
 package com.example.consumer.listener;
 
-import com.example.consumer.dto.DebeziumEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.consumer.dto.OrderEventPayload;
+import com.example.consumer.dto.OutboxEventMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,24 +16,27 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class AnalyticsListener {
 
-    private final ObjectMapper objectMapper;
+    private final OutboxEventParser outboxEventParser;
     private static final DateTimeFormatter FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("Asia/Seoul"));
 
-    @KafkaListener(topics = "shopdb.shopdb.orders", groupId = "analytics-group")
+    @KafkaListener(topics = "shopdb.shopdb.outbox_events", groupId = "analytics-group")
     public void handleOrderForAnalytics(String message) {
         try {
-            DebeziumEvent event = objectMapper.readValue(message, DebeziumEvent.class);
+            OutboxEventParser.ParsedOutboxEvent parsed = outboxEventParser.parse(message);
+            OutboxEventMessage outboxEvent = parsed.outboxEvent();
+            OrderEventPayload payload = parsed.payload();
 
-            String eventTime = event.getSourceTimestamp() != null
-                    ? FMT.format(Instant.ofEpochMilli(event.getSourceTimestamp()))
+            String eventTime = outboxEvent.getSourceTimestamp() != null
+                    ? FMT.format(Instant.ofEpochMilli(outboxEvent.getSourceTimestamp()))
                     : "unknown";
 
-            log.info("=== [분석] CDC 이벤트 수집 ===");
-            log.info("  op={}, table={}, orderId={}, status={}, amount={}, ts={}",
-                    event.getOperation(), event.getTable(),
-                    event.getId(), event.getStatus(),
-                    event.getTotalAmount(), eventTime);
+            log.info("=== [분석] Outbox 이벤트 수집 ===");
+            log.info("  op={}, table={}, eventType={}, aggregateId={}, orderId={}, status={}, amount={}, ts={}",
+                    outboxEvent.getOperation(), outboxEvent.getTable(),
+                    outboxEvent.getEventType(), outboxEvent.getAggregateId(),
+                    payload.getOrderId(), payload.getStatus(),
+                    payload.getTotalAmount(), eventTime);
         } catch (Exception e) {
             log.error("분석 데이터 적재 실패: {}", e.getMessage(), e);
         }
