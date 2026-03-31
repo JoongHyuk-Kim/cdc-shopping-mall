@@ -14,25 +14,21 @@ public class InventoryListener {
     private final OutboxEventParser outboxEventParser;
 
     @KafkaListener(topics = "shopdb.shopdb.outbox_events", groupId = "inventory-group")
-    public void handleOrderForInventory(String message) {
-        try {
-            OrderEventPayload event = outboxEventParser.parse(message).payload();
+    public void handleOrderForInventory(String message) throws Exception {
+        OrderEventPayload event = outboxEventParser.parse(message).payload();
 
-            if ("ORDER_CONFIRMED".equals(event.getEventType())) {
-                log.info("=== [재고] 주문 확정 → 재고 차감 ===");
-                log.info("  주문번호: {}", event.getOrderId());
-                log.info("  품목 수: {}", event.getItems() != null ? event.getItems().size() : 0);
-                log.info("  → payload 기준으로 재고 차감 처리 시작");
-            }
+        if ("ORDER_CONFIRMED".equals(event.getEventType())) {
+            log.info("=== [재고] 주문 확정 → 재고 차감 ===");
+            log.info("  주문번호: {}", event.getOrderId());
+            log.info("  품목 수: {}", event.getItems() != null ? event.getItems().size() : 0);
+            log.info("  → payload 기준으로 재고 차감 처리 시작");
+        }
 
-            if ("ORDER_CANCELLED".equals(event.getEventType())) {
-                log.info("=== [재고] 주문 취소 → 재고 복원 ===");
-                log.info("  주문번호: {}", event.getOrderId());
-                log.info("  품목 수: {}", event.getItems() != null ? event.getItems().size() : 0);
-                log.info("  → payload 기준으로 재고 복원 처리 시작");
-            }
-        } catch (Exception e) {
-            log.error("재고 처리 실패: {}", e.getMessage(), e);
+        if ("ORDER_CANCELLED".equals(event.getEventType())) {
+            log.info("=== [재고] 주문 취소 → 재고 복원 ===");
+            log.info("  주문번호: {}", event.getOrderId());
+            log.info("  품목 수: {}", event.getItems() != null ? event.getItems().size() : 0);
+            log.info("  → payload 기준으로 재고 복원 처리 시작");
         }
     }
 }

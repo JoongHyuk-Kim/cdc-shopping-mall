@@ -1,0 +1,17 @@
+.DS_Store
+
+# IntelliJ
+.idea/workspace.xml
+.idea/shelf/
+.idea/**/workspace.xml
+.idea/**/shelf/
+*.iml
+
+# Gradle
+.gradle/
+**/.gradle/
+build/
+**/build/
+
+# Logs
+*.log

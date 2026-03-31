@@ -14,17 +14,13 @@ public class OrderNotificationListener {
     private final OutboxEventParser outboxEventParser;
 
     @KafkaListener(topics = "shopdb.shopdb.outbox_events", groupId = "notification-group1")
-    public void handleOrderEvent(String message) {
-        try {
-            OrderEventPayload event = outboxEventParser.parse(message).payload();
+    public void handleOrderEvent(String message) throws Exception {
+        OrderEventPayload event = outboxEventParser.parse(message).payload();
 
-            switch (event.getEventType()) {
-                case "ORDER_CREATED" -> handleNewOrder(event);
-                case "ORDER_CONFIRMED", "ORDER_CANCELLED" -> handleOrderUpdate(event);
-                default -> log.warn("알 수 없는 eventType: {}", event.getEventType());
-            }
-        } catch (Exception e) {
-            log.error("알림 처리 실패: {}", e.getMessage(), e);
+        switch (event.getEventType()) {
+            case "ORDER_CREATED" -> handleNewOrder(event);
+            case "ORDER_CONFIRMED", "ORDER_CANCELLED" -> handleOrderUpdate(event);
+            default -> log.warn("알 수 없는 eventType: {}", event.getEventType());
         }
     }
 

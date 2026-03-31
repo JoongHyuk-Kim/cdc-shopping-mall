@@ -21,24 +21,20 @@ public class AnalyticsListener {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("Asia/Seoul"));
 
     @KafkaListener(topics = "shopdb.shopdb.outbox_events", groupId = "analytics-group")
-    public void handleOrderForAnalytics(String message) {
-        try {
-            OutboxEventParser.ParsedOutboxEvent parsed = outboxEventParser.parse(message);
-            OutboxEventMessage outboxEvent = parsed.outboxEvent();
-            OrderEventPayload payload = parsed.payload();
+    public void handleOrderForAnalytics(String message) throws Exception {
+        OutboxEventParser.ParsedOutboxEvent parsed = outboxEventParser.parse(message);
+        OutboxEventMessage outboxEvent = parsed.outboxEvent();
+        OrderEventPayload payload = parsed.payload();
 
-            String eventTime = outboxEvent.getSourceTimestamp() != null
-                    ? FMT.format(Instant.ofEpochMilli(outboxEvent.getSourceTimestamp()))
-                    : "unknown";
+        String eventTime = outboxEvent.getSourceTimestamp() != null
+                ? FMT.format(Instant.ofEpochMilli(outboxEvent.getSourceTimestamp()))
+                : "unknown";
 
-            log.info("=== [분석] Outbox 이벤트 수집 ===");
-            log.info("  op={}, table={}, eventType={}, aggregateId={}, orderId={}, status={}, amount={}, ts={}",
-                    outboxEvent.getOperation(), outboxEvent.getTable(),
-                    outboxEvent.getEventType(), outboxEvent.getAggregateId(),
-                    payload.getOrderId(), payload.getStatus(),
-                    payload.getTotalAmount(), eventTime);
-        } catch (Exception e) {
-            log.error("분석 데이터 적재 실패: {}", e.getMessage(), e);
-        }
+        log.info("=== [분석] Outbox 이벤트 수집 ===");
+        log.info("  op={}, table={}, eventType={}, aggregateId={}, orderId={}, status={}, amount={}, ts={}",
+                outboxEvent.getOperation(), outboxEvent.getTable(),
+                outboxEvent.getEventType(), outboxEvent.getAggregateId(),
+                payload.getOrderId(), payload.getStatus(),
+                payload.getTotalAmount(), eventTime);
     }
 }
