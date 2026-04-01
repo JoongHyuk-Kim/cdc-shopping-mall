@@ -2,6 +2,11 @@ server:
   port: 8081
 
 spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/shopdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&useUnicode=true&characterEncoding=utf8
+    username: shopuser
+    password: shoppass
+    driver-class-name: com.mysql.cj.jdbc.Driver
   kafka:
     bootstrap-servers: localhost:29092
     consumer:
