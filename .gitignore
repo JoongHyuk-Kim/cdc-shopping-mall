@@ -13,5 +13,9 @@
 build/
 **/build/
 
+# IntelliJ 컴파일 출력
+bin/
+**/bin/
+
 # Logs
 *.log
